@@ -2,9 +2,9 @@
 
 var pkg = require('./package.json');
 
-var ACME = require('@root/acme');
+var ACME = require('@sam-lord/acme');
 var Greenlock = module.exports;
-var request = require('@root/request');
+var request = require('@sam-lord/request');
 var process = require('process');
 
 var G = Greenlock;
