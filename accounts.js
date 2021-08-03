@@ -46,24 +46,7 @@ A._getOrCreate = function(gnlck, mconf, db, acme, args) {
 
 // What we really need out of this is the private key and the ACME "key" id
 A._rawGetOrCreate = function(gnlck, mconf, db, acme, args, email) {
-    var p;
-    if (db.check) {
-        p = A._checkStore(gnlck, mconf, db, acme, args, email);
-    } else {
-        p = Promise.resolve(null);
-    }
-
-    return p.then(function(fullAccount) {
-        if (!fullAccount) {
-            return A._newAccount(gnlck, mconf, db, acme, args, email, null);
-        }
-
-        if (fullAccount.keypair && fullAccount.key && fullAccount.key.kid) {
-            return fullAccount;
-        }
-
-        return A._newAccount(gnlck, mconf, db, acme, args, email, fullAccount);
-    });
+    return A._newAccount(gnlck, mconf, db, acme, args, email, null);
 };
 
 A._newAccount = function(gnlck, mconf, db, acme, args, email, fullAccount) {
@@ -171,49 +154,4 @@ A._newAccount = function(gnlck, mconf, db, acme, args, email, fullAccount) {
             });
         }
     );
-};
-
-A._checkStore = function(gnlck, mconf, db, acme, args, email) {
-    if ((args.domain || args.domains) && !args.subject) {
-        console.warn("use 'subject' instead of 'domain'");
-        args.subject = args.domain;
-    }
-
-    var account = args.account;
-    if (!account) {
-        account = {};
-    }
-
-    if (args.accountKey) {
-        console.warn(
-            'rather than passing accountKey, put it directly into your account key store'
-        );
-        // TODO we probably don't need this
-        return U._importKeypair(args.accountKey);
-    }
-
-    if (!db.check) {
-        return Promise.resolve(null);
-    }
-
-    return db
-        .check({
-            //keypair: undefined,
-            //receipt: undefined,
-            email: email,
-            subscriberEmail: email,
-            customerEmail: args.customerEmail || mconf.customerEmail,
-            account: account,
-            directoryUrl:
-                args.directoryUrl ||
-                mconf.directoryUrl ||
-                gnlck._defaults.directoryUrl
-        })
-        .then(function(fullAccount) {
-            if (!fullAccount) {
-                return null;
-            }
-
-            return fullAccount;
-        });
 };
