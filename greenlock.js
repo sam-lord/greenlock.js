@@ -332,41 +332,29 @@ G.create = function(gconf) {
             );
         }
 
-        await (async function next() {
-            var site = sites.shift();
-            if (!site) {
-                return null;
-            }
+        for (const site of sites) {
+            const order = { site };
 
-            var order = { site: site };
             renewedOrFailed.push(order);
-            // TODO merge args + result?
-            return greenlock
-                ._order(mconf, site)
-                .then(function(pems) {
-                    if (args._includePems) {
-                        order.pems = pems;
-                    }
-                })
-                .catch(function(err) {
-                    order.error = err;
 
-                    // For greenlock express serialization
-                    err.toJSON = errorToJSON;
-                    err.context = err.context || 'cert_order';
-                    err.subject = site.subject;
-                    if (args.servername) {
-                        err.servername = args.servername;
-                    }
-                    // for debugging, but not to be relied on
-                    err._site = site;
-                    // TODO err.context = err.context || 'renew_certificate'
-                    greenlock._notify('error', err);
-                })
-                .then(function() {
-                    return next();
-                });
-        })();
+            try {
+                const pems = await greenlock._order(mconf, site);
+                if (args._includePems) {
+                    order.pems = pems;
+                }
+            } catch (error) {
+                order.error = error;
+
+                error.toJSON = errorToJSON;
+                error.context = error.context || 'cert_order';
+                error.subject = site.subject;
+                if (args.servername) {
+                    error.servername = args.servername;
+                }
+                error._site = site;
+                greenlock._notify('error', error);
+            }
+        }
 
         return renewedOrFailed;
     };
